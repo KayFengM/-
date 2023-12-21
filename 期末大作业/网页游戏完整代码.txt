@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>收集许愿星</title>
+    <style>
+        *{
+            font-family:微软雅黑 黑体 sans-serif ;
+        }
+
+        .container{
+            margin: 0 auto;
+            padding: 0 60px;
+            background-color: azure;
+            display: grid;
+            grid-template-columns: 0.4fr 0.3fr 0.3fr;
+            place-items: center;
+            
+        }
+        h1{
+            text-align: center;
+            border-bottom: 2px solid rgb(238, 138, 175);
+            grid-column: 1/4;
+            grid-row: 1/2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 img{
+            max-width: 90%;
+            height: auto;
+        }
+        .character-select-lable{
+            text-align: center;
+            background-color: #e7b5b5;
+            grid-column: 1/3;
+            grid-row: 2/3;
+        }
+
+        
+
+        #gameCanvas {
+            border: 1px solid rgb(126, 219, 219);
+            grid-column: 1/3;
+            grid-row: 4/7;
+            max-width: 100%; /* 确保游戏框宽度不超过其容器 */
+            height: auto; /* 高度自动调整 */
+
+        }
+
+        #characterSelect {
+            margin-right: 10px;
+        }
+        #characterCards{
+            display: flex;       
+            justify-content: center;    
+            margin:10px;
+            grid-column: 1/3;
+            grid-row: 3/4;
+        }
+
+        #startButton {
+            grid-column: 3/4;
+            grid-row: 2/4;
+            padding: 15px 30px; /* 增加按钮的内边距 */
+            font-size: 1.2em; /* 增大字体大小 */
+            width: auto; /* 根据需要设置宽度 */
+            height: auto; /* 根据需要设置高度 */
+            background-color: #4CAF50; /* 可选：更改按钮颜色 */
+            color: white; /* 可选：更改文字颜色 */
+            border: none; /* 可选：去除边框 */
+            border-radius: 5px; /* 可选：添加圆角 */
+            cursor: pointer; /* 可选：鼠标悬停时显示指针 */
+        }
+
+        .character-card {
+            cursor: pointer;
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            margin: 5px;
+            width: 150px;  /* 设置卡片宽度 */
+            height: 200px; /* 设置卡片高度 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* display: inline-block; */
+        }
+        .character-card img {
+            max-width: 100%; /* 图片最大宽度为卡片宽度 */
+            height: auto;   /* 图片高度自动调整 */
+            margin-bottom: 10px; /* 图片与文本之间的间距 */
+        }
+
+        .character-card:hover {
+            background-color: #f0f0f0;
+
+        }
+        #highScoreslist{
+            text-align: center;
+
+        }
+
+        #gameOverMessage {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 5px;
+        }
+ 
+ 
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>收集许愿星
+            <img src="together1.png" alt="together1">
+        </h1>
+        <label for="characterSelect" class="character-select-lable">选择你喜爱的角色吧！</label>
+        <div id="characterCards">
+            <div class="character-card" data-character="Mickey">
+                <img src="Mickey.jpg" alt="Mickey">
+                Mickey</div>
+
+            <div class="character-card" data-character="Minnie">
+                <img src="Minnie.jpg" alt="Minnie">
+                Minnie</div>
+            <div class="character-card" data-character="Donald">
+                <img src="Donald.jpg" alt="Donald">
+                Donald</div>
+        </div>
+        
+        <button id="startButton" disabled>开始游戏</button>
+ 
+        <canvas id="gameCanvas" width="1050" height="600"></canvas>
+ 
+        <h2>最高分记录</h2>
+        <ul id="highScoresList"></ul>
+    </div>
+    <div id="gameOverMessage">恭喜你！你赢了！</div>
+    <script>
+        const characterImages = {
+            character1: "Mickey.jpg",
+            character2: "Minnie.jpg",
+            character3: "Donald.jpg"
+        };
+
+        const canvas = document.getElementById("gameCanvas");
+        const context = canvas.getContext("2d");
+        const boxSize = 40;
+        const snakeSize = 20;
+        const foodImage = new Image();
+        foodImage.src = '许愿星.jpg';
+
+       
+        const snakeBodyImages = [
+            '1.jpg',
+            '2.jpg',
+            '3.jpg',
+            '4.jpg',
+            '5.jpg',
+            '6.jpg',
+            '7.jpg',
+            '8.jpg',
+            '9.jpg',
+            '10.jpg',
+            '11.jpg',
+            '12.jpg',
+            '13.jpg',
+            '14.jpg',
+            '15.jpg',
+            '16.jpg',
+            '17.jpg',
+            '18.jpg',
+            '19.jpg',
+            '20.jpg',
+            '21.jpg',
+            '22.jpg',
+            '23.jpg',
+            '24.jpg',
+            '25.jpg',
+            '26.jpg',
+        ];
+
+        const snakeBodyImageObjects = snakeBodyImages.map(src => {
+            const img = new Image();
+            img.src = src;
+            return img;
+        });
+
+        const snakeImage = new Image(); // 新增蛇的头部图片
+        snakeImage.src = '米奇.jpg'; 
+
+        let snake = [{ x: 10, y: 10 }];
+        let food = { x: 15, y: 10 };
+        let score = 0;
+        let direction = "right";
+        let gameStarted = false;
+        let highScores = {};
+        let selectedCharacter = ""; // 添加选定的角色变量
+
+        document.querySelectorAll('.character-card').forEach(card => {
+            card.addEventListener('click', function () {
+                selectedCharacter = this.getAttribute('data-character');
+                console.log("选择了角色：" + selectedCharacter);
+                isCharacterSelected = true; // 更新角色选择状态
+                document.getElementById("startButton").removeAttribute('disabled'); // 移除开始按钮的禁用状态
+            });
+        });
+
+        // 开始游戏按钮事件
+        document.getElementById("startButton").addEventListener("click", function () {
+            if (isCharacterSelected) {
+                gameStarted = true;
+                this.disabled = true; // 游戏开始后再次禁用开始按钮
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            const key = event.key;
+            if (key === "ArrowUp" && direction !== "down") {
+                direction = "up";
+            } else if (key === "ArrowDown" && direction !== "up") {
+                direction = "down";
+            } else if (key === "ArrowLeft" && direction !== "right") {
+                direction = "left";
+            } else if (key === "ArrowRight" && direction !== "left") {
+                direction = "right";
+            }
+        });
+        
+        function drawFood() {
+            const foodSize = 30; // 设置许愿星的大小
+            context.drawImage(foodImage, food.x * boxSize, food.y * boxSize, foodSize, foodSize);
+        }
+
+        function drawSnake() {
+            for (let i = 0; i < snake.length; i++) {
+                // 蛇头使用独立的图片
+                if (i === 0) {
+                    context.drawImage(snakeImage, snake[i].x * boxSize, snake[i].y * boxSize, boxSize, boxSize);
+                } else {
+                    // 蛇身使用轮换的图片
+                    const bodyImageIndex = (i - 1) % snakeBodyImageObjects.length; // 循环使用蛇身图片
+                    const bodyImage = snakeBodyImageObjects[bodyImageIndex];
+                    context.drawImage(bodyImage, snake[i].x * boxSize, snake[i].y * boxSize, boxSize, boxSize);
+                }
+            }
+        }
+
+        
+        function drawScore() {
+            context.fillStyle = "black";
+            context.font = "20px Arial";
+            context.fillText("Score: " + score, 10, 30);
+        }
+
+        function moveSnake() {
+            let head = { x: snake[0].x, y: snake[0].y };
+            if (direction === "right") head.x++;
+            if (direction === "left") head.x--;
+            if (direction === "up") head.y--;
+            if (direction === "down") head.y++;
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                food = { x: Math.floor(Math.random() * canvas.width / boxSize), y: Math.floor(Math.random() * canvas.height / boxSize) };
+            } else {
+                snake.pop();
+            }
+        }
+
+        function checkCollision() {
+            let head = snake[0];
+            if (head.x < 0 || head.y < 0 || head.x >= canvas.width / boxSize || head.y >= canvas.height / boxSize) {
+                handleGameOver();
+            }
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    handleGameOver();
+                    break;
+                }
+            }
+        }
+
+        // 游戏结束处理
+        function handleGameOver() {
+            if (score > 0) {
+                const characterHighScore = highScores[selectedCharacter] || 0;
+                if (score > characterHighScore) {
+                    highScores[selectedCharacter] = score;
+                    updateHighScoresList();
+                    alert("新的最高分记录！角色：" + selectedCharacter + "，最高分：" + score);
+                } else {
+                    alert("游戏结束！角色：" + selectedCharacter + "，得分：" + score);
+                }
+            } else {
+                alert("游戏结束！角色：" + selectedCharacter + "，得分：" + score);
+            }
+            resetGame();
+        }
+
+        function resetGame() {
+            snake = [{ x: 10, y: 10 }];
+            food = { x: 15, y: 10 };
+            score = 0;
+            direction = "right";
+            gameStarted = false;
+            document.getElementById("startButton").disabled = false;
+        }
+
+        function updateHighScoresList() {
+            const highScoresList = document.getElementById("highScoresList");
+            highScoresList.innerHTML = "";
+            for (const character in highScores) {
+                const listItem = document.createElement("li");
+                listItem.textContent = character + ": " + highScores[character];
+                highScoresList.appendChild(listItem);
+            }
+        }
+
+        document.getElementById("startButton").addEventListener("click", function () {
+            gameStarted = true;
+            document.getElementById("startButton").disabled = true;
+        });
+
+        function gameLoop() {
+            if (gameStarted) {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                drawSnake();
+                drawFood();
+                drawScore();
+                moveSnake();
+                checkCollision();
+            }
+            // 检查分数是否达到25
+            if (score >= 25) {
+                // 分数达到25，显示结束消息并停止游戏
+                document.getElementById('gameOverMessage').style.display = 'block';
+                // 停止调用 gameLoop
+                return;
+            }
+            setTimeout(function () {
+                requestAnimationFrame(gameLoop);
+            }, 100);
+        }
+
+        updateHighScoresList();
+        gameLoop();
+    </script>
+</body>
+
+</html>
